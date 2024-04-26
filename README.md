@@ -33,6 +33,6 @@ Para empezar con el proyecto Whatsappchatbot, sigue estos pasos:
     <img src="https://wwebjs.dev/images/logo.png" style="height: 20px;"/>
     </a>
   </li>
-  <li>Elemento 3</li>
+ 
 </ul>
 
