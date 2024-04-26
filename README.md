@@ -20,3 +20,19 @@ Para empezar con el proyecto Whatsappchatbot, sigue estos pasos:
 1. Clona el repositorio: `git clone https://github.com/Nicolaserd/Whatsappchatbot.git`
 2. Instala las dependencias: `npm install`
 
+## tecnologías
+
+<ul>
+  <li>
+    <a href="https://nestjs.com" target="_blank">
+    <img src="https://nestjs.com/logo-small-gradient.76616405.svg" style="height: 20px;"/>
+    </a>
+  </li>
+  <li>
+    <a href="https://wwebjs.dev/" target="_blank">
+    <img src="https://wwebjs.dev/images/logo.png" style="height: 20px;"/>
+    </a>
+  </li>
+  <li>Elemento 3</li>
+</ul>
+
