@@ -1,5 +1,6 @@
-import { Controller, Get, Res, Req } from '@nestjs/common';
+import { Controller, Get, Res, Req, InternalServerErrorException } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
+import { error } from 'console';
 
 @Controller('whatsapp')
 export class WhatsappController {
@@ -11,8 +12,8 @@ export class WhatsappController {
       await this.whatsappService.initClient();
       return res.status(200).send({ message: 'WhatsApp client initialized successfully' });
     } catch (error) {
-      console.error('Error initializing WhatsApp client:', error);
-      return res.status(500).send({ error: 'An error occurred during initialization' });
+      
+      throw new InternalServerErrorException({ errormsg: 'An error occurred during initialization',error})
     }
    
   }
@@ -20,6 +21,9 @@ export class WhatsappController {
   @Get('qr-code')
   async getQRCode(@Res() res: any) {
     const qrCode = await this.whatsappService.getQRCode();
+    if(!qrCode){
+      throw new InternalServerErrorException({error:"not found qr"})
+    }
     res.send(qrCode);
   }
 

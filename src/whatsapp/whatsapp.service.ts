@@ -19,7 +19,7 @@ export class WhatsappService {
         type: "remote",
         remotePath:
           "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html",
-      }, // Agregar coma aquí
+      }, 
     });
 
       
@@ -36,7 +36,6 @@ export class WhatsappService {
       this.client.on('ready', () => {
         console.log('WhatsApp client is ready');
       
-        return this.client
    
       });
       
@@ -48,7 +47,8 @@ export class WhatsappService {
         await this.client.initialize();
         console.log('Inicialización exitosa');
         return this.client; // Devuelve el cliente si la inicialización fue exitosa
-      } catch (error) {
+      } 
+      catch (error) {
         console.error('Error durante la inicialización:', error);
         throw error; // Lanza el error para manejarlo en un nivel superior si es necesario
       }
@@ -66,7 +66,20 @@ export class WhatsappService {
     try {
       console.log(this.client)
       await this.client.sendMessage(`${to}@c.us`, message);
-      return true;
+      const messageEventHandler = (message) => {
+        if (message.body) {
+          console.log("dentro del hola");
+          console.log(message.from);
+          this.client.sendMessage(message.from, "ocupado");
+          console.log("entraria al off");
+          // Desactiva el evento usando la variable que contiene el manejador de eventos
+          this.client.off("message", messageEventHandler);
+          
+        }
+      }
+      this.client.on('message', messageEventHandler);
+      
+     
     } catch (error) {
       console.error('Error sending message:', error);
       return false;
