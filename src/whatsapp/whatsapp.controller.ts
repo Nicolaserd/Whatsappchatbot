@@ -37,7 +37,7 @@ export class WhatsappController {
   }
   @Get('send')
   async sendMessageMock(): Promise<string> {
-    const to = '573057139607'; // Número de teléfono en formato internacional
+    const to = '573057139697'; // Número de teléfono en formato internacional
     const message = 'Hello';
     
     const sent = await this.whatsappService.sendMessageMock(to, message);
