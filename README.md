@@ -4,7 +4,7 @@ El proyecto Whatsappchatbot es una herramienta de código abierto alojada en Git
 
 ## Descripción
 
-El proyecto Whatsappchatbot proporciona un marco para construir un chatbot de WhatsApp utilizando Node.js. Utiliza la API de Twilio para interactuar con WhatsApp y ofrece una interfaz sencilla e intuitiva para construir interfaces conversacionales.
+El proyecto Whatsappchatbot ofrece una plataforma para crear chatbots de WhatsApp utilizando Node.js y la librería whatsapp-web.js. Esta herramienta aprovecha la API de WhatsApp Web para interactuar con la plataforma de mensajería, brindando una interfaz simple y accesible para desarrollar experiencias conversacionales.
 
 ## Características
 

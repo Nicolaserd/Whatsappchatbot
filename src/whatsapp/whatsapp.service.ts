@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { Client, LocalAuth } from 'whatsapp-web.js';
 // import * as QRCode from 'qrcode';
 import * as QRCode from 'qrcode';
 import * as child_process from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { error } from 'console';
 
 
 
@@ -40,12 +41,13 @@ export class WhatsappService {
       });
       
       this.client.on('error', (error) => {
-        console.error('Error during WhatsApp client initialization:', error);
+        throw new InternalServerErrorException('Error during WhatsApp client initialization:', error)
+    
       });
      
       try {
         await this.client.initialize();
-        console.log('Inicialización exitosa');
+       
         return this.client; // Devuelve el cliente si la inicialización fue exitosa
       } 
       catch (error) {
@@ -65,6 +67,9 @@ export class WhatsappService {
     
     try {
       console.log(this.client)
+      if(!this.client){
+        throw new UnauthorizedException("client not connected")
+      }
       await this.client.sendMessage(`${to}@c.us`, message);
       const messageEventHandler = (message) => {
         if (message.body) {
@@ -86,6 +91,9 @@ export class WhatsappService {
     }
   }
   async sendMessageMock(to: string, message: string) {
+    if(!this.client){
+      throw new UnauthorizedException("client not connected")
+    }
     try {
       console.log(this.client)
       await this.client.sendMessage(`${to}@c.us`, message);
