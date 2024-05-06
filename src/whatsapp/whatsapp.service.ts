@@ -42,8 +42,14 @@ export class WhatsappService {
 
       this.client.on('ready', () => {
         console.log('WhatsApp client is ready');
-        const session = this.client['session'];
-        if (session) {
+        
+        const session = {
+          pushname: this.client.info.pushname,
+          wid: this.client.info.wid._serialized
+          // Agrega más campos relevantes de ser necesario
+         };
+        console.log(session);
+        if (session.pushname && session.wid) {
             console.log('Autenticado exitosamente');
             console.log(session);
             // Guardar la sesión al autenticar
@@ -63,7 +69,7 @@ export class WhatsappService {
      
       try {
         await this.client.initialize();
-        console.log(await this.client.getContacts())
+      
        
         return this.client; // Devuelve el cliente si la inicialización fue exitosa
       } 
