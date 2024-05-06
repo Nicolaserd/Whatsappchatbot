@@ -4,8 +4,7 @@ import { Client, LocalAuth } from 'whatsapp-web.js';
 import * as QRCode from 'qrcode';
 import * as child_process from 'child_process';
 import fs from 'fs';
-import path from 'path';
-import { error } from 'console';
+const SESSION_FILE_PATH = './session.json';
 
 
 
@@ -26,6 +25,13 @@ export class WhatsappService {
       
       
       this.client = cliente;
+      if (fs.existsSync(SESSION_FILE_PATH)) {
+        const sessionData = JSON.parse(fs.readFileSync(SESSION_FILE_PATH, 'utf-8'));
+        this.client = new Client({ session: sessionData });
+    }
+
+   
+
       this.client.on('qr', async (qr) => {
         console.log("dentro del qr", qr);
         fs.writeFileSync('qr.html', `<img src="${await QRCode.toDataURL(qr)}">`);
@@ -36,10 +42,20 @@ export class WhatsappService {
 
       this.client.on('ready', () => {
         console.log('WhatsApp client is ready');
-      
-   
+        const session = this.client['session'];
+        if (session) {
+            console.log('Autenticado exitosamente');
+            console.log(session);
+            // Guardar la sesión al autenticar
+            fs.writeFileSync(SESSION_FILE_PATH, JSON.stringify(session));
+            console.log('Sesión guardada exitosamente');
+        } else {
+            console.error('Error: sesión no disponible');
+        }
+
       });
-      
+
+           
       this.client.on('error', (error) => {
         throw new InternalServerErrorException('Error during WhatsApp client initialization:', error)
     
@@ -47,6 +63,7 @@ export class WhatsappService {
      
       try {
         await this.client.initialize();
+        console.log(await this.client.getContacts())
        
         return this.client; // Devuelve el cliente si la inicialización fue exitosa
       } 
@@ -75,7 +92,13 @@ export class WhatsappService {
         if (message.body) {
           console.log("dentro del hola");
           console.log(message.from);
-          this.client.sendMessage(message.from, "ocupado");
+          // this.client.sendMessage(message.from, "ocupado");
+          if(message.from==="hola"){
+            console.log("hola")
+          }
+          if(message.from==="chao"){
+            console.log("hola")
+          }
           console.log("entraria al off");
           // Desactiva el evento usando la variable que contiene el manejador de eventos
           this.client.off("message", messageEventHandler);
