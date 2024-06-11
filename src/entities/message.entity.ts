@@ -22,5 +22,5 @@ import { Users } from "./users.entity";
   
     @ManyToOne(() => Users, (user) => user.messages)
     @JoinColumn({ name: 'user_id' })
-    user: Users[];
+    user: Users;
   }
