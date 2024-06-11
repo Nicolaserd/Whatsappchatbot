@@ -44,7 +44,8 @@ export class AuthService {
     async signIn(email:string,password:string){
 
         const userdb = await this.usersRepository.findOneBy({email})
-        if(!userdb) throw new BadRequestException('Invalid credentials');
+        
+        if(!userdb) throw new BadRequestException(`Invalid credentials ${email}`);
 
         const passwordMatch = await bcrypt.compare(password, userdb.password);
 
@@ -59,7 +60,8 @@ export class AuthService {
         email: userdb.email,
         role:userdb.role 
       };
-  
+
+     
       const token = this.jwtService.sign(userPayload);
   
       return { success: 'user logged in successfully', token };

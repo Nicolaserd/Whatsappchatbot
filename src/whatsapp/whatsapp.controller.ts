@@ -1,6 +1,10 @@
-import { Controller, Get, Res, Req, InternalServerErrorException, Query } from '@nestjs/common';
+import { Controller, Get, Res, Req, InternalServerErrorException, Query, UseGuards } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
 import { Request, Response } from 'express';
+import { AuthGuard } from 'src/guards/auth.guard';
+import { Role } from 'src/enum/RoleUser.enum';
+import { Roles } from 'src/decorators/roles.decorator';
+import { RolesGuard } from 'src/guards/roles.guard';
 
 
 @Controller('whatsapp')
@@ -8,6 +12,7 @@ export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 
   @Get()
+  @UseGuards(AuthGuard)
   async initClient() {
     try {
       await this.whatsappService.initClient();
@@ -20,6 +25,8 @@ export class WhatsappController {
   }
 
   @Get('qr-code')
+  @Roles(Role.Admin)
+  @UseGuards(AuthGuard,RolesGuard)
   async getQRCode() {
     const qrCode = await this.whatsappService.getQRCode();
     if(!qrCode){
