@@ -13,7 +13,11 @@ export class WhatsappService {
   private client: Client;
   private qrCode: string;
 
+
   async initClient() {
+
+    console.log("hola")
+
     const cliente = new Client({
       webVersionCache: {
         type: "remote",
@@ -22,13 +26,13 @@ export class WhatsappService {
       }, 
     });
 
-      
+    console.log("cliente : ",cliente)
       
       this.client = cliente;
-      if (fs.existsSync(SESSION_FILE_PATH)) {
-        const sessionData = JSON.parse(fs.readFileSync(SESSION_FILE_PATH, 'utf-8'));
-        this.client = new Client({ session: sessionData });
-    }
+    //   if (fs.existsSync(SESSION_FILE_PATH)) {
+    //     const sessionData = JSON.parse(fs.readFileSync(SESSION_FILE_PATH, 'utf-8'));
+    //     this.client = new Client({ session: sessionData });
+    // }
 
    
 
@@ -43,21 +47,21 @@ export class WhatsappService {
       this.client.on('ready', () => {
         console.log('WhatsApp client is ready');
         
-        const session = {
-          pushname: this.client.info.pushname,
-          wid: this.client.info.wid._serialized
-          // Agrega más campos relevantes de ser necesario
-         };
-        console.log(session);
-        if (session.pushname && session.wid) {
-            console.log('Autenticado exitosamente');
-            console.log(session);
-            // Guardar la sesión al autenticar
-            fs.writeFileSync(SESSION_FILE_PATH, JSON.stringify(session));
-            console.log('Sesión guardada exitosamente');
-        } else {
-            console.error('Error: sesión no disponible');
-        }
+        // const session = {
+        //   pushname: this.client.info.pushname,
+        //   wid: this.client.info.wid._serialized
+        //   // Agrega más campos relevantes de ser necesario
+        //  };
+        // console.log(session);
+        // if (session.pushname && session.wid) {
+        //     console.log('Autenticado exitosamente');
+        //     console.log(session);
+        //     // Guardar la sesión al autenticar
+        //     fs.writeFileSync(SESSION_FILE_PATH, JSON.stringify(session));
+        //     console.log('Sesión guardada exitosamente');
+        // } else {
+        //     console.error('Error: sesión no disponible');
+        // }
 
       });
 

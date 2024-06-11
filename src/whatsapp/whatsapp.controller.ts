@@ -1,16 +1,17 @@
-import { Controller, Get, Res, Req, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Get, Res, Req, InternalServerErrorException, Query } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
-import { error } from 'console';
+import { Request, Response } from 'express';
+
 
 @Controller('whatsapp')
 export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 
   @Get()
-  async initClient(@Res() res: any) {
+  async initClient() {
     try {
       await this.whatsappService.initClient();
-      return res.status(200).send({ message: 'WhatsApp client initialized successfully' });
+      return { message: 'WhatsApp client initialized successfully' };
     } catch (error) {
       
       throw new InternalServerErrorException({ errormsg: 'An error occurred during initialization',error})
@@ -19,21 +20,22 @@ export class WhatsappController {
   }
 
   @Get('qr-code')
-  async getQRCode(@Res() res: any) {
+  async getQRCode() {
     const qrCode = await this.whatsappService.getQRCode();
     if(!qrCode){
       throw new InternalServerErrorException({error:"not found qr"})
     }
-    res.send(qrCode);
+    return qrCode
   }
 
   @Get('send-message')
-  async sendMessage(@Req() req: any, @Res() res: any) {
-    const to = req.query.to;
-    console.log(to)
-    const message = req.query.message;
+  async sendMessage(
+  @Query('to') to: string,
+  @Query('message') message: string,
+  ) {
+   
     await this.whatsappService.sendMessage(to, message);
-    res.send(`Message sent to ${to}`);
+    return`mensaje enviado a ${to}`
   }
   @Get('send')
   async sendMessageMock(): Promise<string> {
