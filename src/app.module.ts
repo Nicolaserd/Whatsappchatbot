@@ -10,6 +10,9 @@ import typeorm from './config/typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { config as dotenvConfig } from 'dotenv';
+import { UsersService } from './users/users.service';
+import { UsersController } from './users/users.controller';
+import { UsersModule } from './users/users.module';
 
 dotenvConfig({ path: '.env' });
 
@@ -35,8 +38,9 @@ dotenvConfig({ path: '.env' });
       signOptions: { expiresIn: '1h' },
       secret: process.env.JWT_SECRET,
     }),
+    UsersModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, UsersController],
+  providers: [AppService, UsersService],
 })
 export class AppModule {}
