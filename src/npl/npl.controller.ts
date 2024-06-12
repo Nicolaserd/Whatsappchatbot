@@ -6,9 +6,11 @@ export class NplController {
   constructor(private readonly nlpService: NplService) {}
 
   @Post()
-  async tokenizeMessage(@Body('message') message: string): Promise<string[]> {
-    console.log(message)
-    return this.nlpService.tokenize(message);
+  async tokenizeMessage(@Body() user: string){
+  
   }
+
+
+
 
   }

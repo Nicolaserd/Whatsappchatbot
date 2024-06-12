@@ -1,9 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import userPreload from 'src/PreloadTemplates/Users';
 import { Messages } from 'src/entities/message.entity';
 import { Users } from 'src/entities/users.entity';
 import { Repository } from 'typeorm';
+import { CreateUserDto, UpdateUserDto } from './userDto';
+import * as bcrypt from 'bcrypt';
+
+
+
 
 @Injectable()
 export class UsersService {
@@ -41,4 +46,32 @@ export class UsersService {
         // Ejemplo de carga de datos
         // await this.someRepository.save(initialData);
       }
+
+    async createUser (user:CreateUserDto){
+
+        const newUser = await this.usersRepository.save(user);
+        
+        const {password,...userNoPassword}=newUser
+
+        return userNoPassword
+    }
+
+    
+    async upDateUser (user:UpdateUserDto){
+
+        const upDateUser = await this.usersRepository.findOne({where:{id:user.id}})
+        if(!upDateUser)  throw new BadRequestException('USUARIO NO ENCONTRADO');
+      
+        if(user.password){
+            const hashedPassword: string = await bcrypt.hash(user.password, 10);
+            user.password=hashedPassword
+          }
+          
+      
+          await this.usersRepository.update(upDateUser.id, user);
+          const updateUser = await this.usersRepository.findOne({where:{id:user.id}})
+          const { password,...userWhitoutPassword  } = updateUser;
+          return userWhitoutPassword;
+       
+    }
 }
