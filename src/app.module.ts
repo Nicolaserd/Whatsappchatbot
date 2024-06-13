@@ -13,6 +13,7 @@ import { config as dotenvConfig } from 'dotenv';
 import { UsersService } from './users/users.service';
 import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
+import { IaModule } from './ia/ia.module';
 
 dotenvConfig({ path: '.env' });
 
@@ -39,6 +40,7 @@ dotenvConfig({ path: '.env' });
       secret: process.env.JWT_SECRET,
     }),
     UsersModule,
+    IaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
