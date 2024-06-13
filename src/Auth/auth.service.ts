@@ -58,8 +58,10 @@ export class AuthService {
         sub: userdb.id,
         id: userdb.id,
         email: userdb.email,
-        role:userdb.role 
+        role:userdb.role,
+        country:userdb.country,
       };
+      
 
      
       const token = this.jwtService.sign(userPayload);

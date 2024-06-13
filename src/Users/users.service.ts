@@ -29,6 +29,7 @@ export class UsersService {
         await Promise.all(arrayUsers.map(async (user) => {
             const { messages, ...userInitial } = user;
             const newUser = await this.usersRepository.create(userInitial);
+            newUser.password = await bcrypt.hash(newUser.password, 10);
             await this.usersRepository.save(newUser);
             console.log(`usuario ${user.name} agregado`)
         

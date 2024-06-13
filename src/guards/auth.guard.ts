@@ -39,10 +39,7 @@ import {
           })
   
           .then((payload) => {
-            request.user = payload;
-            
-
-            
+            request.user = payload;           
             return true;
           })
           .catch((error) => {
