@@ -6,10 +6,12 @@ import {
     JoinColumn,
     UpdateDateColumn,
     CreateDateColumn,
+    ManyToMany,
   } from 'typeorm';
   import { Messages } from './message.entity';
 import { Role } from 'src/enum/RoleUser.enum';
 import { Products } from './products.entity';
+import { Proveedores } from './proveedores.entity';
   
   @Entity({
     name: 'USERS',
@@ -83,4 +85,8 @@ import { Products } from './products.entity';
     @OneToMany(() => Products, (product) => product.user)
     @JoinColumn({ name: 'products_id' })
     Products: Products[];
+
+    @ManyToMany(() => Proveedores, proveedor => proveedor.users)
+    proveedores: Proveedores[];
+
   }
