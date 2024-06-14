@@ -4,22 +4,22 @@ import { MessageDto } from './messageDto';
 
 @Injectable()
 export class IaService {
-    async onModuleInit() {
-        await this.loadData();
-      }
-    async loadData(){
-        const SELECTEDMODEL = "gemma-2b-it-q4f16_1-MLC-1k"
-        const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
-        const enigne = await CreateMLCEngine(
-            SELECTEDMODEL,
-            {
-                initProgressCallback:(info)=>{
-                    console.log("initinitProgressCallback",info)
-                }
-            }
-        )
-    }
+    // async onModuleInit() {
+    //     await this.loadData();
+    //   }
+    // async loadData(){
+       
+    // }
     async sendMessage (message:MessageDto){
-     
+        // const SELECTEDMODEL = "gemma-2b-it-q4f16_1-MLC-1k"
+      
+        // const enigne = await CreateMLCEngine(
+        //     SELECTEDMODEL,
+        //     {
+        //         initProgressCallback:(info)=>{
+        //             console.log("initinitProgressCallback",info)
+        //         }
+        //     }
+        // )
     }
 }

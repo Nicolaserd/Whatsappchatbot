@@ -14,6 +14,7 @@ import { UsersService } from './users/users.service';
 import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
 import { IaModule } from './ia/ia.module';
+import { MercadoPagoModule } from './mercado-pago/mercado-pago.module';
 
 dotenvConfig({ path: '.env' });
 
@@ -41,6 +42,7 @@ dotenvConfig({ path: '.env' });
     }),
     UsersModule,
     IaModule,
+    MercadoPagoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
