@@ -9,6 +9,7 @@ import {
   } from 'typeorm';
   import { Messages } from './message.entity';
 import { Role } from 'src/enum/RoleUser.enum';
+import { Products } from './products.entity';
   
   @Entity({
     name: 'USERS',
@@ -78,4 +79,8 @@ import { Role } from 'src/enum/RoleUser.enum';
     @OneToMany(() => Messages, (messages) => messages.user)
     @JoinColumn({ name: 'messages_id' })
     messages: Messages[];
+
+    @OneToMany(() => Products, (product) => product.user)
+    @JoinColumn({ name: 'products_id' })
+    Products: Products[];
   }
