@@ -16,6 +16,12 @@ import { MercadoPagoModule } from './mercado-pago/mercado-pago.module';
 
 dotenvConfig({ path: '.env' });
 
+const jwtSecret = process.env.JWT_SECRET;
+
+if (process.env.VERCEL && !jwtSecret) {
+  throw new Error('Missing JWT_SECRET in Vercel Environment Variables.');
+}
+
 
 @Module({
   imports: [
@@ -36,7 +42,7 @@ dotenvConfig({ path: '.env' });
       global: true,
       //? Pasar un tiempo de vida al jwt
       signOptions: { expiresIn: '1h' },
-      secret: process.env.JWT_SECRET,
+      secret: jwtSecret,
     }),
     UsersModule,
     IaModule,
