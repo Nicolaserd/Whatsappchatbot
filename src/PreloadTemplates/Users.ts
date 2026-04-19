@@ -1,4 +1,4 @@
-import { Role } from "src/enum/RoleUser.enum";
+import { Role } from "../enum/RoleUser.enum";
 
 const userPreload = {
     users: [

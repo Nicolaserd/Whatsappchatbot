@@ -1,10 +1,10 @@
 import { Controller, Get, Res, Req, InternalServerErrorException, Query, UseGuards } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
 import { Request, Response } from 'express';
-import { AuthGuard } from 'src/guards/auth.guard';
-import { Role } from 'src/enum/RoleUser.enum';
-import { Roles } from 'src/decorators/roles.decorator';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { AuthGuard } from '../guards/auth.guard';
+import { Role } from '../enum/RoleUser.enum';
+import { Roles } from '../decorators/roles.decorator';
+import { RolesGuard } from '../guards/roles.guard';
 
 
 @Controller('whatsapp')
@@ -28,11 +28,11 @@ export class WhatsappController {
   @Roles(Role.Admin)
   @UseGuards(AuthGuard,RolesGuard)
   async getQRCode() {
-    const qrCode = await this.whatsappService.getQRCode();
-    if(!qrCode){
+    const qrCodeResponse = await this.whatsappService.getQRCode();
+    if(!qrCodeResponse){
       throw new InternalServerErrorException({error:"not found qr"})
     }
-    return qrCode
+    return qrCodeResponse
   }
 
   @Get('send-message')

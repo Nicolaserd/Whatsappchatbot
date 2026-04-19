@@ -1,5 +1,5 @@
 import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
-import { Client, LocalAuth } from 'whatsapp-web.js';
+import { Client } from 'whatsapp-web.js';
 // import * as QRCode from 'qrcode';
 import * as QRCode from 'qrcode';
 import * as child_process from 'child_process';
@@ -12,6 +12,7 @@ const SESSION_FILE_PATH = './session.json';
 export class WhatsappService {
   private client: Client;
   private qrCode: string;
+  private qrCodeImage: string;
 
 
   async initClient() {
@@ -24,6 +25,9 @@ export class WhatsappService {
         remotePath:
           "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html",
       }, 
+      puppeteer: {
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      },
     });
 
     console.log("cliente : ",cliente)
@@ -38,9 +42,15 @@ export class WhatsappService {
 
       this.client.on('qr', async (qr) => {
         console.log("dentro del qr", qr);
-        fs.writeFileSync('qr.html', `<img src="${await QRCode.toDataURL(qr)}">`);
-        child_process.exec('start qr.html');
+        const qrCodeImage = await QRCode.toDataURL(qr);
+
         this.qrCode = qr;
+        this.qrCodeImage = qrCodeImage;
+
+        if (!process.env.VERCEL) {
+          fs.writeFileSync('qr.html', `<img src="${qrCodeImage}">`);
+          child_process.exec('start qr.html');
+        }
       });
   
 
@@ -87,7 +97,14 @@ export class WhatsappService {
   }
 
   getQRCode() {
-    return this.qrCode;
+    if (!this.qrCode) {
+      return null;
+    }
+
+    return {
+      qr: this.qrCodeImage,
+      raw: this.qrCode,
+    };
   }
 
   async sendMessage(to: string, message: string) {

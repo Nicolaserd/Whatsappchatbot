@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import userPreload from 'src/PreloadTemplates/Users';
-import { Messages } from 'src/entities/message.entity';
-import { Users } from 'src/entities/users.entity';
+import userPreload from '../PreloadTemplates/Users';
+import { Messages } from '../entities/message.entity';
+import { Users } from '../entities/users.entity';
 import { Repository } from 'typeorm';
 import { CreateUserDto, UpdateUserDto } from './userDto';
 import * as bcrypt from 'bcrypt';

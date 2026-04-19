@@ -9,7 +9,7 @@ import {
     ManyToMany,
   } from 'typeorm';
   import { Messages } from './message.entity';
-import { Role } from 'src/enum/RoleUser.enum';
+import { Role } from '../enum/RoleUser.enum';
 import { Products } from './products.entity';
 import { Proveedores } from './proveedores.entity';
   
