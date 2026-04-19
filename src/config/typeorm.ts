@@ -4,13 +4,25 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 
 dotenvConfig({ path: '.env' });
 
-const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  process.env.STORAGE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL_UNPOOLED;
+
+if (process.env.VERCEL && !databaseUrl) {
+  throw new Error(
+    'Missing database URL. Add DATABASE_URL, STORAGE_URL, or POSTGRES_URL in Vercel Environment Variables.',
+  );
+}
 
 const config = {
   type: 'postgres',
-  ...(hasDatabaseUrl
+  ...(databaseUrl
     ? {
-        url: process.env.DATABASE_URL,
+        url: databaseUrl,
         ssl: {
           rejectUnauthorized: false,
         },
@@ -18,9 +30,9 @@ const config = {
     : {
         host: 'localhost',
         port: 5432,
-        username: process.env.DB_USER,
+        username: process.env.DB_USER || process.env.POSTGRES_USER,
         password: process.env.POSTGRES_PASSWORD,
-        database: process.env.POSTGRES_DB,
+        database: process.env.POSTGRES_DB || process.env.POSTGRES_DATABASE,
       }),
   autoLoadEntities: true,
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
