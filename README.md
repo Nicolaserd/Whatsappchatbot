@@ -60,7 +60,7 @@ src/
   Auth/              Registro y login
   Users/             Creacion, actualizacion y carga inicial de usuarios
   telegram/          Webhook y envio de mensajes por Telegram
-  IA/                Estructura inicial para responder mensajes con IA
+  IA/                Servicio que llama a Gemini y define el prompt madre de Mario
   npl/               Estructura inicial para procesar texto
   mercado-pago/      Estructura inicial para pagos
   entities/          Tablas de la base de datos
@@ -195,6 +195,12 @@ Para responder con contexto, el backend consulta las ultimas 10 conversaciones g
 
 Antes de guardar una conversacion, el backend cifra `userMessage` y `botMessage` con AES-256-GCM usando `CONVERSATION_ENCRYPTION_KEY`. En la tabla se ve texto cifrado tipo `v1:...`, no el mensaje real. Los mensajes viejos que ya estaban guardados en texto plano se pueden seguir leyendo para no romper el contexto, pero no quedan cifrados automaticamente.
 
+## Prompt madre de Mario
+
+El personaje del agente esta definido en `src/IA/ia.service.ts`, dentro de `marioSystemPrompt`.
+
+Ese prompt se envia como `systemInstruction` en cada llamada a Gemini, asi que todas las respuestas del bot usan la identidad de Mario: tecnico, relajado, friki de computacion, con humor sarcastico ligero, referencias a futbol, pizza y gaseosa de manzana, pero sin inventar informacion tecnica ni perder utilidad.
+
 ## Autenticacion y roles
 
 Archivos principales:
@@ -281,7 +287,6 @@ Cuando inicia el modulo de usuarios, `UsersService` intenta cargar esos datos si
 
 Estas partes existen, pero aun no estan completas:
 
-- `IaService`: tiene comentarios para usar modelos de IA, pero todavia no devuelve una respuesta real.
 - `NplController`: recibe una ruta, pero no esta llamando al servicio todavia.
 - `MercadoPagoService`: por ahora solo devuelve `"Created Order"`.
 - `UsersController.update`: la ruta existe, pero no llama correctamente al metodo de actualizacion.
