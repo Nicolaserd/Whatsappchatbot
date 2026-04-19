@@ -23,7 +23,13 @@ NestJS es el edificio donde viven esos ayudantes. Cada ayudante esta separado en
 - Tiene una ruta principal `GET /` que responde `Hello World!`.
 - Se conecta con Telegram usando `TELEGRAM_BOT_TOKEN`.
 - Puede recibir mensajes de Telegram por webhook.
-- Puede responder automaticamente `Hola` cuando alguien le escribe al bot.
+- Puede responder automaticamente con Google AI Studio/Gemini cuando alguien le escribe al bot.
+- Evita procesar dos mensajes del mismo chat al mismo tiempo: si la IA esta pensando, pide esperar.
+- Guarda conversaciones de Telegram en PostgreSQL.
+- Cifra el contenido de las conversaciones antes de guardarlas en la base de datos.
+- Limita el uso global del bot a 4 conversaciones por dia.
+- Si se supera el limite global, pide un PIN guardado en `BOT_UNLOCK_PIN`.
+- Usa las ultimas 10 conversaciones guardadas de cada chat como contexto para la IA.
 - Puede enviar mensajes a un `chatId`.
 - Permite registrar usuarios.
 - Permite iniciar sesion y devolver un token JWT.
@@ -71,6 +77,7 @@ Archivos principales:
 - `src/telegram/telegram.controller.ts`
 - `src/telegram/telegram.service.ts`
 - `src/telegram/telegram.module.ts`
+- `src/telegram/conversation-encryption.service.ts`
 
 Rutas:
 
@@ -136,12 +143,16 @@ Telegram no acepta `localhost` como webhook porque necesita una URL publica HTTP
 5. Registras el webhook una vez con la API de Telegram.
 6. Un usuario le escribe al bot.
 7. Telegram manda el mensaje a `POST /telegram/webhook`.
-8. El backend responde automaticamente `Hola`.
+8. El backend manda el mensaje a Gemini.
+9. Gemini genera una respuesta.
+10. El bot responde por Telegram.
 
-Para recibir mensajes y responder `Hola`, lo minimo es:
+Para recibir mensajes y responder con IA, lo minimo es:
 
 ```env
 TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
+GOOGLE_AI_API_KEY=api_key_de_google_ai_studio
+CONVERSATION_ENCRYPTION_KEY=una_clave_larga_para_cifrar_conversaciones
 ```
 
 Y registrar este webhook:
@@ -151,6 +162,38 @@ https://tu-dominio.vercel.app/telegram/webhook
 ```
 
 `TELEGRAM_WEBHOOK_SECRET` es opcional, pero recomendado. Si lo configuras, Telegram enviara ese secreto en el header `x-telegram-bot-api-secret-token` y el backend lo validara.
+
+Si un usuario envia otro mensaje mientras la IA esta pensando, el bot responde:
+
+```txt
+Estoy pensando tu mensaje anterior. Dame un momento.
+```
+
+El bot permite maximo 4 conversaciones globales por dia. Es decir, el limite aplica para todos los chats juntos.
+
+En cada respuesta permitida, el bot agrega al final:
+
+```txt
+uso de el bot 4 veces al dia intento numero X
+```
+
+Donde `X` es el intento global del dia.
+
+Si ya se alcanzo el limite global, el bot responde:
+
+```txt
+El uso global del bot llego a 4 veces hoy. Envia el PIN para continuar.
+```
+
+Si el usuario envia el valor de `BOT_UNLOCK_PIN`, el bot desbloquea ese chat durante el dia y responde:
+
+```txt
+PIN correcto. Ya puedes seguir usando el bot hoy.
+```
+
+Para responder con contexto, el backend consulta las ultimas 10 conversaciones guardadas de ese `chatId` y las envia a Gemini antes del mensaje nuevo.
+
+Antes de guardar una conversacion, el backend cifra `userMessage` y `botMessage` con AES-256-GCM usando `CONVERSATION_ENCRYPTION_KEY`. En la tabla se ve texto cifrado tipo `v1:...`, no el mensaje real. Los mensajes viejos que ya estaban guardados en texto plano se pueden seguir leyendo para no romper el contexto, pero no quedan cifrados automaticamente.
 
 ## Autenticacion y roles
 
@@ -195,6 +238,7 @@ Entidades principales:
 
 - `Users`: usuarios del sistema.
 - `Messages`: mensajes relacionados con usuarios.
+- `TelegramConversation`: conversaciones de Telegram usadas por el agente de IA.
 - `Products`: productos relacionados con usuarios.
 - `Proveedores`: proveedores relacionados con usuarios.
 
@@ -208,6 +252,10 @@ POSTGRES_DB=tu_base_de_datos
 JWT_SECRET=tu_clave_secreta
 TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
 TELEGRAM_WEBHOOK_SECRET=una_clave_secreta_para_telegram
+GOOGLE_AI_API_KEY=api_key_de_google_ai_studio
+GEMINI_MODEL=gemini-2.5-flash
+BOT_UNLOCK_PIN=123456789Zeus
+CONVERSATION_ENCRYPTION_KEY=una_clave_larga_para_cifrar_conversaciones
 ```
 
 Si existe `DATABASE_URL`, el proyecto usa esa URL. Si no existe, intenta conectarse a PostgreSQL local con `DB_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`.
@@ -271,6 +319,10 @@ DATABASE_URL=postgresql://usuario:password@host.neon.tech/base?sslmode=require
 JWT_SECRET=tu_clave_secreta
 TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
 TELEGRAM_WEBHOOK_SECRET=una_clave_secreta_para_telegram
+GOOGLE_AI_API_KEY=api_key_de_google_ai_studio
+GEMINI_MODEL=gemini-2.5-flash
+BOT_UNLOCK_PIN=123456789Zeus
+CONVERSATION_ENCRYPTION_KEY=una_clave_larga_para_cifrar_conversaciones
 ```
 
 Comando para preview deploy:
@@ -297,4 +349,4 @@ npm run lint
 
 ## Resumen en una frase
 
-Este proyecto es una API en NestJS para un bot de Telegram: recibe mensajes por webhook, responde usando la Bot API oficial, protege rutas con login y roles, guarda datos en PostgreSQL y esta lista para desplegar en Vercel.
+Este proyecto es una API en NestJS para un bot de Telegram: recibe mensajes por webhook, responde usando Gemini, protege rutas con login y roles, guarda conversaciones cifradas en PostgreSQL y esta lista para desplegar en Vercel.
