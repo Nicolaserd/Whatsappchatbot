@@ -74,8 +74,8 @@ Archivos principales:
 
 Rutas:
 
-- `GET /whatsapp`: inicializa el cliente de WhatsApp. Necesita token JWT.
-- `GET /whatsapp/qr-code`: devuelve el QR guardado. Necesita token JWT y rol `admin`.
+- `GET /whatsapp`: inicializa el cliente de WhatsApp y devuelve el QR en base64. Necesita token JWT y rol `admin`.
+- `GET /whatsapp/qr-code`: devuelve el ultimo QR guardado. Necesita token JWT y rol `admin`.
 - `GET /whatsapp/send-message?to=NUMERO&message=TEXTO`: envia un mensaje al numero indicado.
 - `GET /whatsapp/send`: envia un mensaje de prueba a un numero fijo.
 
@@ -84,7 +84,7 @@ Flujo simple:
 1. Se llama a `GET /whatsapp`.
 2. El servicio crea un cliente de WhatsApp Web.
 3. WhatsApp genera un QR.
-4. El proyecto guarda ese QR y tambien crea/abre `qr.html`.
+4. La respuesta devuelve el QR como `data:image/png;base64,...` para que el frontend lo muestre en un `<img>`.
 5. El usuario escanea el QR con WhatsApp.
 6. Cuando el cliente queda listo, ya se pueden enviar mensajes.
 

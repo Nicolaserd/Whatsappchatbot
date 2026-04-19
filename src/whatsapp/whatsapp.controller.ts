@@ -12,11 +12,11 @@ export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 
   @Get()
-  @UseGuards(AuthGuard)
+  @Roles(Role.Admin)
+  @UseGuards(AuthGuard,RolesGuard)
   async initClient() {
     try {
-      await this.whatsappService.initClient();
-      return { message: 'WhatsApp client initialized successfully' };
+      return await this.whatsappService.initClient();
     } catch (error) {
       
       throw new InternalServerErrorException({ errormsg: 'An error occurred during initialization',error})
