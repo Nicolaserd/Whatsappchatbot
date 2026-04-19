@@ -1,14 +1,14 @@
-# Whatsappchatbot
+# Telegram Chatbot
 
-Este proyecto es un backend hecho con NestJS. Su idea principal es conectar una cuenta de WhatsApp Web, mostrar un codigo QR para iniciar sesion y permitir enviar mensajes desde una API.
+Este proyecto es un backend hecho con NestJS. Ahora esta pensado para trabajar con un bot de Telegram usando la Bot API oficial.
 
-Tambien tiene partes preparadas para usuarios, login con JWT, roles, mensajes guardados en base de datos, IA, NLP, generacion de QR y Mercado Pago. Algunas de esas partes todavia estan como prueba o esqueleto.
+Tambien incluye usuarios, login con JWT, roles, mensajes guardados en base de datos, IA, NLP y Mercado Pago. Algunas partes todavia son esqueletos o pruebas.
 
 ## Explicacion muy simple
 
 Imagina que el proyecto es una oficina con varios ayudantes:
 
-- Un ayudante habla con WhatsApp.
+- Un ayudante habla con Telegram.
 - Otro ayudante revisa si una persona inicio sesion.
 - Otro ayudante mira si esa persona es admin, usuario o proveedor.
 - Otro ayudante guarda usuarios y mensajes en una base de datos.
@@ -21,12 +21,13 @@ NestJS es el edificio donde viven esos ayudantes. Cada ayudante esta separado en
 
 - Arranca una API HTTP en `http://localhost:3000`.
 - Tiene una ruta principal `GET /` que responde `Hello World!`.
-- Puede inicializar un cliente de WhatsApp Web con `whatsapp-web.js`.
-- Puede generar un QR de WhatsApp para enlazar la cuenta.
-- Puede enviar mensajes a un numero de WhatsApp si el cliente ya esta conectado.
+- Se conecta con Telegram usando `TELEGRAM_BOT_TOKEN`.
+- Puede recibir mensajes de Telegram por webhook.
+- Puede responder automaticamente `Hola` cuando alguien le escribe al bot.
+- Puede enviar mensajes a un `chatId`.
 - Permite registrar usuarios.
 - Permite iniciar sesion y devolver un token JWT.
-- Usa guards para proteger rutas con token y con roles.
+- Usa guards para proteger rutas con token y roles.
 - Usa PostgreSQL con TypeORM para guardar datos.
 - Carga usuarios y mensajes de prueba al iniciar.
 
@@ -38,12 +39,11 @@ Ese archivo crea la aplicacion NestJS y la pone a escuchar en el puerto `3000`.
 
 El archivo mas importante para juntar todo es `src/app.module.ts`. Ahi se conectan los modulos principales:
 
-- `WhatsappModule`: maneja WhatsApp.
+- `TelegramModule`: maneja Telegram.
 - `AuthModule`: registro, login y JWT.
 - `UsersModule`: usuarios y datos iniciales.
 - `IaModule`: punto inicial para mensajes con IA.
 - `NplModule`: punto inicial para procesar texto con `natural`.
-- `QrGeneratorModule`: genera codigos QR de prueba.
 - `MercadoPagoModule`: punto inicial para pagos.
 - `TypeOrmModule`: conecta la API con PostgreSQL.
 
@@ -53,10 +53,9 @@ El archivo mas importante para juntar todo es `src/app.module.ts`. Ahi se conect
 src/
   Auth/              Registro y login
   Users/             Creacion, actualizacion y carga inicial de usuarios
-  whatsapp/          Conexion con WhatsApp Web y envio de mensajes
+  telegram/          Webhook y envio de mensajes por Telegram
   IA/                Estructura inicial para responder mensajes con IA
   npl/               Estructura inicial para procesar texto
-  qr-generator/      Generacion de QR de prueba
   mercado-pago/      Estructura inicial para pagos
   entities/          Tablas de la base de datos
   guards/            Proteccion con token y roles
@@ -65,28 +64,93 @@ src/
   config/            Configuracion de TypeORM/PostgreSQL
 ```
 
-## Modulo de WhatsApp
+## Modulo de Telegram
 
 Archivos principales:
 
-- `src/whatsapp/whatsapp.controller.ts`
-- `src/whatsapp/whatsapp.service.ts`
+- `src/telegram/telegram.controller.ts`
+- `src/telegram/telegram.service.ts`
+- `src/telegram/telegram.module.ts`
 
 Rutas:
 
-- `GET /whatsapp`: inicializa el cliente de WhatsApp y devuelve el QR en base64. Necesita token JWT y rol `admin`.
-- `GET /whatsapp/qr-code`: devuelve el ultimo QR guardado. Necesita token JWT y rol `admin`.
-- `GET /whatsapp/send-message?to=NUMERO&message=TEXTO`: envia un mensaje al numero indicado.
-- `GET /whatsapp/send`: envia un mensaje de prueba a un numero fijo.
+- `GET /telegram/status`: revisa si las variables de Telegram estan configuradas.
+- `GET /telegram/webhook-info`: consulta el webhook configurado en Telegram. Necesita token JWT y rol `admin`.
+- `POST /telegram/send-message`: envia un mensaje manualmente. Necesita token JWT y rol `admin`.
+- `POST /telegram/webhook`: recibe eventos de Telegram. Esta es la URL que se registra en Telegram.
 
-Flujo simple:
+### Enviar mensaje manual
 
-1. Se llama a `GET /whatsapp`.
-2. El servicio crea un cliente de WhatsApp Web.
-3. WhatsApp genera un QR.
-4. La respuesta devuelve el QR como `data:image/png;base64,...` para que el frontend lo muestre en un `<img>`.
-5. El usuario escanea el QR con WhatsApp.
-6. Cuando el cliente queda listo, ya se pueden enviar mensajes.
+```http
+POST /telegram/send-message
+Authorization: Bearer TU_TOKEN_ADMIN
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "chatId": "123456789",
+  "text": "Hola desde mi API"
+}
+```
+
+### Registrar webhook
+
+El webhook se registra una sola vez directamente contra la API de Telegram, no desde una ruta del backend.
+
+Primero configura en `.env` local o en Vercel:
+
+```env
+TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
+TELEGRAM_WEBHOOK_SECRET=una_clave_secreta_para_telegram
+```
+
+Para registrar el webhook de Vercel:
+
+```bash
+curl -X POST "https://api.telegram.org/bot<TU_TOKEN>/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d "{\"url\":\"https://tu-dominio.vercel.app/telegram/webhook\",\"secret_token\":\"una_clave_secreta_para_telegram\"}"
+```
+
+En Windows PowerShell:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "https://api.telegram.org/bot<TU_TOKEN>/setWebhook" `
+  -ContentType "application/json" `
+  -Body '{"url":"https://tu-dominio.vercel.app/telegram/webhook","secret_token":"una_clave_secreta_para_telegram"}'
+```
+
+Telegram no acepta `localhost` como webhook porque necesita una URL publica HTTPS. Para probar localmente puedes usar un tunel como ngrok y registrar una URL tipo `https://algo.ngrok-free.app/telegram/webhook`.
+
+## Flujo de Telegram
+
+1. Creas un bot hablando con `@BotFather` en Telegram.
+2. BotFather te da un `TELEGRAM_BOT_TOKEN`.
+3. Pones el token en `.env` local y en las variables de Vercel.
+4. Despliegas la API en una URL publica.
+5. Registras el webhook una vez con la API de Telegram.
+6. Un usuario le escribe al bot.
+7. Telegram manda el mensaje a `POST /telegram/webhook`.
+8. El backend responde automaticamente `Hola`.
+
+Para recibir mensajes y responder `Hola`, lo minimo es:
+
+```env
+TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
+```
+
+Y registrar este webhook:
+
+```txt
+https://tu-dominio.vercel.app/telegram/webhook
+```
+
+`TELEGRAM_WEBHOOK_SECRET` es opcional, pero recomendado. Si lo configuras, Telegram enviara ese secreto en el header `x-telegram-bot-api-secret-token` y el backend lo validara.
 
 ## Autenticacion y roles
 
@@ -142,6 +206,8 @@ DB_USER=tu_usuario
 POSTGRES_PASSWORD=tu_password
 POSTGRES_DB=tu_base_de_datos
 JWT_SECRET=tu_clave_secreta
+TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
+TELEGRAM_WEBHOOK_SECRET=una_clave_secreta_para_telegram
 ```
 
 Si existe `DATABASE_URL`, el proyecto usa esa URL. Si no existe, intenta conectarse a PostgreSQL local con `DB_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`.
@@ -169,7 +235,6 @@ Estas partes existen, pero aun no estan completas:
 
 - `IaService`: tiene comentarios para usar modelos de IA, pero todavia no devuelve una respuesta real.
 - `NplController`: recibe una ruta, pero no esta llamando al servicio todavia.
-- `QrGeneratorService`: genera un QR de prueba hacia una URL de Google, pero solo lo imprime en consola.
 - `MercadoPagoService`: por ahora solo devuelve `"Created Order"`.
 - `UsersController.update`: la ruta existe, pero no llama correctamente al metodo de actualizacion.
 
@@ -181,16 +246,7 @@ Instalar dependencias:
 npm install
 ```
 
-Crear un archivo `.env` con las variables necesarias:
-
-```env
-DB_USER=tu_usuario
-POSTGRES_PASSWORD=tu_password
-POSTGRES_DB=tu_base_de_datos
-JWT_SECRET=tu_clave_secreta
-```
-
-Levantar PostgreSQL y asegurarse de que exista la base de datos.
+Crear un archivo `.env` con las variables necesarias.
 
 Correr en modo desarrollo:
 
@@ -206,16 +262,16 @@ http://localhost:3000
 
 ## Deploy en Vercel
 
-Este proyecto ya tiene un entrypoint serverless en `api/index.ts` y una configuracion `vercel.json` para que Vercel mande todas las rutas a NestJS.
+Este proyecto tiene un entrypoint serverless en `api/index.ts` y una configuracion `vercel.json` para que Vercel mande todas las rutas a NestJS.
 
 Antes de desplegar, crea estas variables en Vercel:
 
 ```env
 DATABASE_URL=postgresql://usuario:password@host.neon.tech/base?sslmode=require
 JWT_SECRET=tu_clave_secreta
+TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
+TELEGRAM_WEBHOOK_SECRET=una_clave_secreta_para_telegram
 ```
-
-Si usas Neon desde la integracion de Vercel, Vercel puede crear `DATABASE_URL` automaticamente.
 
 Comando para preview deploy:
 
@@ -229,8 +285,6 @@ Comando para produccion:
 npx vercel@latest deploy --prod
 ```
 
-Nota importante: Vercel sirve muy bien para la API HTTP, login, usuarios y conexion a PostgreSQL. La parte de `whatsapp-web.js` necesita un navegador y una sesion viva por mucho tiempo; eso no encaja bien con funciones serverless. Para un bot de WhatsApp estable conviene usar Railway, Render, Fly.io, VPS o cualquier hosting con proceso Node persistente.
-
 ## Comandos utiles
 
 ```bash
@@ -243,4 +297,4 @@ npm run lint
 
 ## Resumen en una frase
 
-Este proyecto es una API en NestJS que quiere funcionar como un chatbot de WhatsApp: conecta WhatsApp Web con QR, protege rutas con login y roles, guarda usuarios/mensajes en PostgreSQL y tiene bases preparadas para IA, NLP y pagos.
+Este proyecto es una API en NestJS para un bot de Telegram: recibe mensajes por webhook, responde usando la Bot API oficial, protege rutas con login y roles, guarda datos en PostgreSQL y esta lista para desplegar en Vercel.
