@@ -1,240 +1,99 @@
 # Telegram Chatbot
 
-Este proyecto es un backend hecho con NestJS. Ahora esta pensado para trabajar con un bot de Telegram usando la Bot API oficial.
+Backend en NestJS para un bot de Telegram con autenticacion, roles, base de datos PostgreSQL y respuestas asistidas por IA.
 
-Tambien incluye usuarios, login con JWT, roles, mensajes guardados en base de datos, IA, NLP y Mercado Pago. Algunas partes todavia son esqueletos o pruebas.
+Este README esta escrito como documentacion publica. No debe contener tokens, PINs, URLs reales, usuarios reales, contrasenas, cadenas de conexion, prompts internos completos ni valores de variables de entorno.
 
-## Explicacion muy simple
+## Funciones principales
 
-Imagina que el proyecto es una oficina con varios ayudantes:
+- Recibe mensajes de Telegram por webhook.
+- Responde mensajes usando un servicio de IA configurado por variables de entorno.
+- Guarda conversaciones en PostgreSQL.
+- Cifra el contenido de las conversaciones antes de guardarlo.
+- Protege rutas administrativas con JWT y roles.
+- Tiene control de uso configurable para el bot.
+- Incluye modulos iniciales para usuarios, NLP y Mercado Pago.
+- Esta preparado para correr localmente o desplegarse en Vercel.
 
-- Un ayudante habla con Telegram.
-- Otro ayudante revisa si una persona inicio sesion.
-- Otro ayudante mira si esa persona es admin, usuario o proveedor.
-- Otro ayudante guarda usuarios y mensajes en una base de datos.
-- Otro ayudante esta empezando a aprender IA y procesamiento de texto.
-- Otro ayudante esta preparado para pagos, pero por ahora solo responde una prueba.
-
-NestJS es el edificio donde viven esos ayudantes. Cada ayudante esta separado en un modulo para que el proyecto no sea una mezcla gigante de archivos.
-
-## Que hace ahora
-
-- Arranca una API HTTP en `http://localhost:3000`.
-- Tiene una ruta principal `GET /` que responde `Hello World!`.
-- Se conecta con Telegram usando `TELEGRAM_BOT_TOKEN`.
-- Puede recibir mensajes de Telegram por webhook.
-- Puede responder automaticamente con Google AI Studio/Gemini cuando alguien le escribe al bot.
-- Evita procesar dos mensajes del mismo chat al mismo tiempo: si la IA esta pensando, pide esperar.
-- Guarda conversaciones de Telegram en PostgreSQL.
-- Cifra el contenido de las conversaciones antes de guardarlas en la base de datos.
-- Limita el uso global del bot a 4 conversaciones por dia.
-- Si se supera el limite global, pide un PIN guardado en `BOT_UNLOCK_PIN`.
-- Usa las ultimas 10 conversaciones guardadas de cada chat como contexto para la IA.
-- Puede enviar mensajes a un `chatId`.
-- Permite registrar usuarios.
-- Permite iniciar sesion y devolver un token JWT.
-- Usa guards para proteger rutas con token y roles.
-- Usa PostgreSQL con TypeORM para guardar datos.
-- Carga usuarios y mensajes de prueba al iniciar.
-
-## Como esta construido
-
-La entrada del programa esta en `src/main.ts`.
-
-Ese archivo crea la aplicacion NestJS y la pone a escuchar en el puerto `3000`.
-
-El archivo mas importante para juntar todo es `src/app.module.ts`. Ahi se conectan los modulos principales:
-
-- `TelegramModule`: maneja Telegram.
-- `AuthModule`: registro, login y JWT.
-- `UsersModule`: usuarios y datos iniciales.
-- `IaModule`: punto inicial para mensajes con IA.
-- `NplModule`: punto inicial para procesar texto con `natural`.
-- `MercadoPagoModule`: punto inicial para pagos.
-- `TypeOrmModule`: conecta la API con PostgreSQL.
-
-## Carpetas importantes
+## Estructura
 
 ```txt
 src/
-  Auth/              Registro y login
-  Users/             Creacion, actualizacion y carga inicial de usuarios
+  Auth/              Registro, login y JWT
+  Users/             Usuarios y carga inicial de datos
   telegram/          Webhook y envio de mensajes por Telegram
-  IA/                Servicio que llama a Gemini y define el prompt madre de Mario
-  npl/               Estructura inicial para procesar texto
-  mercado-pago/      Estructura inicial para pagos
-  entities/          Tablas de la base de datos
-  guards/            Proteccion con token y roles
-  decorators/        Decorador @Roles()
+  IA/                Servicio de IA
+  npl/               Procesamiento de texto
+  mercado-pago/      Integracion inicial de pagos
+  entities/          Entidades de TypeORM
+  guards/            Proteccion con JWT y roles
+  decorators/        Decoradores compartidos
   enum/              Roles del sistema
-  config/            Configuracion de TypeORM/PostgreSQL
+  config/            Configuracion de TypeORM
+api/
+  index.ts           Entrada serverless para Vercel
 ```
 
-## Modulo de Telegram
+## Variables de entorno
 
-Archivos principales:
-
-- `src/telegram/telegram.controller.ts`
-- `src/telegram/telegram.service.ts`
-- `src/telegram/telegram.module.ts`
-- `src/telegram/conversation-encryption.service.ts`
-
-Rutas:
-
-- `GET /telegram/status`: revisa si las variables de Telegram estan configuradas.
-- `GET /telegram/webhook-info`: consulta el webhook configurado en Telegram. Necesita token JWT y rol `admin`.
-- `POST /telegram/send-message`: envia un mensaje manualmente. Necesita token JWT y rol `admin`.
-- `POST /telegram/webhook`: recibe eventos de Telegram. Esta es la URL que se registra en Telegram.
-
-### Enviar mensaje manual
-
-```http
-POST /telegram/send-message
-Authorization: Bearer TU_TOKEN_ADMIN
-Content-Type: application/json
-```
-
-Body:
-
-```json
-{
-  "chatId": "123456789",
-  "text": "Hola desde mi API"
-}
-```
-
-### Registrar webhook
-
-El webhook se registra una sola vez directamente contra la API de Telegram, no desde una ruta del backend.
-
-Primero configura en `.env` local o en Vercel:
+Crea un archivo `.env` local y configura los valores reales solo ahi o en el panel de variables de entorno del proveedor de despliegue.
 
 ```env
-TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
-TELEGRAM_WEBHOOK_SECRET=una_clave_secreta_para_telegram
+DATABASE_URL=
+DB_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+JWT_SECRET=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET=
+GOOGLE_AI_API_KEY=
+GEMINI_API_KEY=
+GEMINI_MODEL=
+BOT_UNLOCK_PIN=
+CONVERSATION_ENCRYPTION_KEY=
 ```
 
-Para registrar el webhook de Vercel:
+Notas:
 
-```bash
-curl -X POST "https://api.telegram.org/bot<TU_TOKEN>/setWebhook" \
-  -H "Content-Type: application/json" \
-  -d "{\"url\":\"https://tu-dominio.vercel.app/telegram/webhook\",\"secret_token\":\"una_clave_secreta_para_telegram\"}"
-```
+- `DATABASE_URL` se usa para una conexion completa a PostgreSQL.
+- Si no existe `DATABASE_URL`, la app intenta usar `DB_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`.
+- `GOOGLE_AI_API_KEY` o `GEMINI_API_KEY` habilita las respuestas con IA.
+- `TELEGRAM_WEBHOOK_SECRET` es recomendado para validar llamadas entrantes de Telegram.
+- `CONVERSATION_ENCRYPTION_KEY` debe ser una clave larga y privada.
+- `BOT_UNLOCK_PIN` debe tratarse como secreto.
 
-En Windows PowerShell:
+## Seguridad
 
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri "https://api.telegram.org/bot<TU_TOKEN>/setWebhook" `
-  -ContentType "application/json" `
-  -Body '{"url":"https://tu-dominio.vercel.app/telegram/webhook","secret_token":"una_clave_secreta_para_telegram"}'
-```
+- No subas archivos `.env` al repositorio.
+- No publiques tokens de Telegram, claves de IA, secretos JWT, PINs, cadenas de conexion ni URLs privadas.
+- No pongas valores reales en ejemplos del README.
+- Rota de inmediato cualquier credencial que haya sido publicada, incluso si ya fue eliminada del archivo.
+- Si un secreto llego a un commit remoto, considera limpiar el historial o invalidar el secreto en el proveedor correspondiente.
 
-Telegram no acepta `localhost` como webhook porque necesita una URL publica HTTPS. Para probar localmente puedes usar un tunel como ngrok y registrar una URL tipo `https://algo.ngrok-free.app/telegram/webhook`.
+## Telegram
 
-## Flujo de Telegram
+El bot recibe eventos en la ruta de webhook y envia respuestas mediante la Bot API de Telegram.
 
-1. Creas un bot hablando con `@BotFather` en Telegram.
-2. BotFather te da un `TELEGRAM_BOT_TOKEN`.
-3. Pones el token en `.env` local y en las variables de Vercel.
-4. Despliegas la API en una URL publica.
-5. Registras el webhook una vez con la API de Telegram.
-6. Un usuario le escribe al bot.
-7. Telegram manda el mensaje a `POST /telegram/webhook`.
-8. El backend manda el mensaje a Gemini.
-9. Gemini genera una respuesta.
-10. El bot responde por Telegram.
+Flujo general:
 
-Para recibir mensajes y responder con IA, lo minimo es:
+1. Crear el bot con BotFather.
+2. Guardar el token en variables de entorno.
+3. Desplegar la API en una URL publica HTTPS.
+4. Registrar el webhook en Telegram usando el token del bot.
+5. Enviar mensajes al bot desde Telegram.
 
-```env
-TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
-GOOGLE_AI_API_KEY=api_key_de_google_ai_studio
-CONVERSATION_ENCRYPTION_KEY=una_clave_larga_para_cifrar_conversaciones
-```
+Usa siempre valores privados desde variables de entorno cuando registres el webhook.
 
-Y registrar este webhook:
+## Autenticacion
 
-```txt
-https://tu-dominio.vercel.app/telegram/webhook
-```
+El proyecto incluye registro, login con JWT y proteccion por roles.
 
-`TELEGRAM_WEBHOOK_SECRET` es opcional, pero recomendado. Si lo configuras, Telegram enviara ese secreto en el header `x-telegram-bot-api-secret-token` y el backend lo validara.
+Rutas principales:
 
-Si un usuario envia otro mensaje mientras la IA esta pensando, el bot responde:
+- `POST /auth/singup`
+- `POST /auth/singin`
 
-```txt
-Estoy pensando tu mensaje anterior. Dame un momento.
-```
-
-El bot permite maximo 4 conversaciones globales por dia. Es decir, el limite aplica para todos los chats juntos.
-
-En cada respuesta permitida, el bot agrega al final:
-
-```txt
-uso de el bot 4 veces al dia intento numero X
-```
-
-Donde `X` es el intento global del dia.
-
-Si ya se alcanzo el limite global, el bot responde:
-
-```txt
-El uso global del bot llego a 4 veces hoy. Envia el PIN para continuar.
-```
-
-Si el usuario envia el valor de `BOT_UNLOCK_PIN`, el bot desbloquea ese chat durante el dia y responde:
-
-```txt
-PIN correcto. Ya puedes seguir usando el bot hoy.
-```
-
-Para responder con contexto, el backend consulta las ultimas 10 conversaciones guardadas de ese `chatId` y las envia a Gemini antes del mensaje nuevo.
-
-Antes de guardar una conversacion, el backend cifra `userMessage` y `botMessage` con AES-256-GCM usando `CONVERSATION_ENCRYPTION_KEY`. En la tabla se ve texto cifrado tipo `v1:...`, no el mensaje real. Los mensajes viejos que ya estaban guardados en texto plano se pueden seguir leyendo para no romper el contexto, pero no quedan cifrados automaticamente.
-
-## Prompt madre de Mario
-
-El personaje del agente esta definido en `src/IA/ia.service.ts`, dentro de `marioSystemPrompt`.
-
-Ese prompt se envia como `systemInstruction` en cada llamada a Gemini, asi que todas las respuestas del bot usan la identidad de Mario: tecnico, relajado, friki de computacion, con humor sarcastico ligero, referencias a futbol, pizza y gaseosa de manzana, pero sin inventar informacion tecnica ni perder utilidad.
-
-## Autenticacion y roles
-
-Archivos principales:
-
-- `src/Auth/auth.controller.ts`
-- `src/Auth/auth.service.ts`
-- `src/guards/auth.guard.ts`
-- `src/guards/roles.guard.ts`
-- `src/decorators/roles.decorator.ts`
-
-Rutas:
-
-- `POST /auth/singup`: registra un usuario.
-- `POST /auth/singin`: inicia sesion y devuelve un JWT.
-
-Nota: los nombres de las rutas estan escritos como `singup` y `singin`, no como `signup` y `signin`.
-
-El login funciona asi:
-
-1. El usuario manda email y password.
-2. La API busca el usuario en la base de datos.
-3. Compara la password usando `bcrypt`.
-4. Si todo esta bien, genera un token JWT.
-5. Ese token se usa en rutas protegidas con el header:
-
-```txt
-Authorization: Bearer TU_TOKEN
-```
-
-Roles disponibles:
-
-- `admin`
-- `usuario`
-- `proveedor`
+Nota: los nombres actuales de las rutas estan escritos como `singup` y `singin`.
 
 ## Base de datos
 
@@ -242,101 +101,56 @@ El proyecto usa PostgreSQL con TypeORM.
 
 Entidades principales:
 
-- `Users`: usuarios del sistema.
-- `Messages`: mensajes relacionados con usuarios.
-- `TelegramConversation`: conversaciones de Telegram usadas por el agente de IA.
-- `Products`: productos relacionados con usuarios.
-- `Proveedores`: proveedores relacionados con usuarios.
+- `Users`
+- `Messages`
+- `TelegramConversation`
+- `Products`
+- `Proveedores`
 
-Variables de entorno esperadas:
+La configuracion de TypeORM esta en `src/config/typeorm.ts`.
 
-```env
-DATABASE_URL=postgresql://usuario:password@host.neon.tech/base?sslmode=require
-DB_USER=tu_usuario
-POSTGRES_PASSWORD=tu_password
-POSTGRES_DB=tu_base_de_datos
-JWT_SECRET=tu_clave_secreta
-TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
-TELEGRAM_WEBHOOK_SECRET=una_clave_secreta_para_telegram
-GOOGLE_AI_API_KEY=api_key_de_google_ai_studio
-GEMINI_MODEL=gemini-2.5-flash
-BOT_UNLOCK_PIN=123456789Zeus
-CONVERSATION_ENCRYPTION_KEY=una_clave_larga_para_cifrar_conversaciones
-```
-
-Si existe `DATABASE_URL`, el proyecto usa esa URL. Si no existe, intenta conectarse a PostgreSQL local con `DB_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB`.
-
-Para deploy en Vercel/Neon usa `DATABASE_URL`.
-
-Advertencia importante: `src/config/typeorm.ts` debe quedar asi para no borrar datos:
+Para proteger datos en una base real, revisa con cuidado:
 
 ```ts
 synchronize: true,
 dropSchema: false,
 ```
 
-`dropSchema: false` evita que TypeORM borre las tablas al iniciar. No uses `dropSchema: true` en una base de datos en la nube.
+No uses `dropSchema: true` en una base de datos con datos importantes.
 
-## Datos de prueba
+## Correr localmente
 
-El archivo `src/PreloadTemplates/Users.ts` contiene usuarios de ejemplo.
-
-Cuando inicia el modulo de usuarios, `UsersService` intenta cargar esos datos si no encuentra el usuario `john.doe@example.com`.
-
-## Partes que todavia estan en construccion
-
-Estas partes existen, pero aun no estan completas:
-
-- `NplController`: recibe una ruta, pero no esta llamando al servicio todavia.
-- `MercadoPagoService`: por ahora solo devuelve `"Created Order"`.
-- `UsersController.update`: la ruta existe, pero no llama correctamente al metodo de actualizacion.
-
-## Como correr el proyecto
-
-Instalar dependencias:
+Instala dependencias:
 
 ```bash
 npm install
 ```
 
-Crear un archivo `.env` con las variables necesarias.
-
-Correr en modo desarrollo:
+Crea `.env` con tus valores reales y ejecuta:
 
 ```bash
 npm run start:dev
 ```
 
-La API queda disponible en:
+La API local queda disponible en:
 
 ```txt
 http://localhost:3000
 ```
 
-## Deploy en Vercel
+## Deploy
 
-Este proyecto tiene un entrypoint serverless en `api/index.ts` y una configuracion `vercel.json` para que Vercel mande todas las rutas a NestJS.
+Este proyecto incluye `api/index.ts` y `vercel.json` para desplegar en Vercel.
 
-Antes de desplegar, crea estas variables en Vercel:
+Antes de desplegar, configura las variables de entorno reales en Vercel. No las agregues al README ni a archivos versionados.
 
-```env
-DATABASE_URL=postgresql://usuario:password@host.neon.tech/base?sslmode=require
-JWT_SECRET=tu_clave_secreta
-TELEGRAM_BOT_TOKEN=token_que_te_da_BotFather
-TELEGRAM_WEBHOOK_SECRET=una_clave_secreta_para_telegram
-GOOGLE_AI_API_KEY=api_key_de_google_ai_studio
-GEMINI_MODEL=gemini-2.5-flash
-BOT_UNLOCK_PIN=123456789Zeus
-CONVERSATION_ENCRYPTION_KEY=una_clave_larga_para_cifrar_conversaciones
-```
-
-Comando para preview deploy:
+Preview:
 
 ```bash
 npx vercel@latest deploy
 ```
 
-Comando para produccion:
+Produccion:
 
 ```bash
 npx vercel@latest deploy --prod
@@ -351,7 +165,3 @@ npm run build
 npm run test
 npm run lint
 ```
-
-## Resumen en una frase
-
-Este proyecto es una API en NestJS para un bot de Telegram: recibe mensajes por webhook, responde usando Gemini, protege rutas con login y roles, guarda conversaciones cifradas en PostgreSQL y esta lista para desplegar en Vercel.
