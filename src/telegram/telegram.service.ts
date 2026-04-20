@@ -29,7 +29,8 @@ type TelegramUpdate = {
 export class TelegramService {
   private readonly apiBase = 'https://api.telegram.org';
   private readonly processingChats = new Set<string>();
-  private readonly dailyConversationLimit = 4;
+  private readonly conversationLimit = 4;
+  private readonly conversationLimitWindowHours = 24;
   private readonly contextConversationLimit = 10;
 
   constructor(
@@ -51,8 +52,9 @@ export class TelegramService {
       conversationEncryptionConfigured: Boolean(
         process.env.CONVERSATION_ENCRYPTION_KEY,
       ),
-      dailyConversationLimit: this.dailyConversationLimit,
-      dailyConversationScope: 'global',
+      conversationLimit: this.conversationLimit,
+      conversationLimitScope: 'global_rolling_window',
+      conversationLimitWindowHours: this.conversationLimitWindowHours,
       contextConversationLimit: this.contextConversationLimit,
     };
   }
@@ -111,29 +113,53 @@ export class TelegramService {
     this.processingChats.add(chatKey);
 
     try {
-      const todayCount = await this.countTodayConversations();
-      const chatUnlockedToday = await this.isChatUnlockedToday(chatKey);
+      const windowCount = await this.countConversationsInCurrentWindow();
+      const chatUnlockedInWindow =
+        await this.isChatUnlockedInCurrentWindow(chatKey);
       const usedUnlockPin = this.isUnlockPin(text);
+      const usedExitCommand = this.isExitCommand(text);
+
+      if (chatUnlockedInWindow && usedExitCommand) {
+        const exitMessage =
+          'Listo. El chat quedo bloqueado de nuevo. Para continuar, envia el PIN.';
+
+        await this.sendMessage(chatId, exitMessage);
+        await this.saveConversation(
+          chatKey,
+          '[SALIR]',
+          exitMessage,
+          windowCount + 1,
+          false,
+          true,
+        );
+
+        return {
+          ok: true,
+          handled: true,
+          chatId,
+          usedExitCommand: true,
+        };
+      }
 
       if (
-        todayCount >= this.dailyConversationLimit &&
-        !chatUnlockedToday &&
+        windowCount >= this.conversationLimit &&
+        !chatUnlockedInWindow &&
         !usedUnlockPin
       ) {
         await this.sendMessage(
           chatId,
-          'El uso global del bot llego a 4 veces hoy. Envia el PIN para continuar.',
+          'El uso global del bot llego a 4 veces en las ultimas 24 horas. Envia el PIN para continuar.',
         );
 
         return {
           ok: true,
           handled: false,
-          reason: 'global_daily_limit_reached',
+          reason: 'global_24h_limit_reached',
           chatId,
         };
       }
 
-      if (todayCount >= this.dailyConversationLimit && usedUnlockPin) {
+      if (windowCount >= this.conversationLimit && usedUnlockPin) {
         const unlockMessage = 'PIN correcto. Ya puedes seguir usando el bot hoy.';
 
         await this.sendMessage(chatId, unlockMessage);
@@ -141,7 +167,7 @@ export class TelegramService {
           chatKey,
           '[PIN_CORRECTO]',
           unlockMessage,
-          todayCount + 1,
+          windowCount + 1,
           true,
         );
 
@@ -153,12 +179,12 @@ export class TelegramService {
         };
       }
 
-      const attemptNumber = todayCount + 1;
+      const attemptNumber = windowCount + 1;
       const context = await this.getConversationContext(chatKey);
 
       await this.sendChatAction(chatId, 'typing');
       const reply = await this.iaService.generateReply(text, context);
-      const telegramReply = `${reply}\n\nuso de el bot 4 veces al dia intento numero ${attemptNumber}`;
+      const telegramReply = `${reply}\n\nuso de el bot 4 veces cada 24 horas intento numero ${attemptNumber}`;
 
       await this.sendMessage(chatId, telegramReply);
       await this.saveConversation(
@@ -200,28 +226,38 @@ export class TelegramService {
     });
   }
 
-  private async countTodayConversations() {
-    const { startOfDay, endOfDay } = this.getTodayRange();
+  private async countConversationsInCurrentWindow() {
+    const { windowStart, windowEnd } = this.getCurrentLimitWindow();
 
     return this.conversationsRepository.count({
       where: {
-        createdAt: Between(startOfDay, endOfDay),
+        createdAt: Between(windowStart, windowEnd),
       },
     });
   }
 
-  private async isChatUnlockedToday(chatId: string) {
-    const { startOfDay, endOfDay } = this.getTodayRange();
+  private async isChatUnlockedInCurrentWindow(chatId: string) {
+    const { windowStart, windowEnd } = this.getCurrentLimitWindow();
 
-    const unlockRecord = await this.conversationsRepository.findOne({
-      where: {
-        chatId,
-        usedUnlockPin: true,
-        createdAt: Between(startOfDay, endOfDay),
+    const latestUnlockControl = await this.conversationsRepository.findOne({
+      where: [
+        {
+          chatId,
+          usedUnlockPin: true,
+          createdAt: Between(windowStart, windowEnd),
+        },
+        {
+          chatId,
+          usedExitCommand: true,
+          createdAt: Between(windowStart, windowEnd),
+        },
+      ],
+      order: {
+        createdAt: 'DESC',
       },
     });
 
-    return Boolean(unlockRecord);
+    return Boolean(latestUnlockControl?.usedUnlockPin);
   }
 
   private async getConversationContext(chatId: string) {
@@ -243,6 +279,7 @@ export class TelegramService {
     botMessage: string,
     attemptNumber: number,
     usedUnlockPin: boolean,
+    usedExitCommand = false,
   ) {
     const conversation = this.conversationsRepository.create({
       chatId,
@@ -250,26 +287,30 @@ export class TelegramService {
       botMessage: this.encryptionService.encrypt(botMessage),
       attemptNumber,
       usedUnlockPin,
+      usedExitCommand,
     });
 
     await this.conversationsRepository.save(conversation);
   }
 
-  private getTodayRange() {
-    const now = new Date();
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
+  private getCurrentLimitWindow() {
+    const windowEnd = new Date();
+    const windowStart = new Date(
+      windowEnd.getTime() -
+        this.conversationLimitWindowHours * 60 * 60 * 1000,
+    );
 
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    return { startOfDay, endOfDay };
+    return { windowStart, windowEnd };
   }
 
   private isUnlockPin(message: string) {
     const unlockPin = process.env.BOT_UNLOCK_PIN;
 
     return Boolean(unlockPin && message.trim() === unlockPin);
+  }
+
+  private isExitCommand(message: string) {
+    return message.trim().toLowerCase() === 'salir';
   }
 
   private async telegramRequest<T = unknown>(method: string, payload?: object) {

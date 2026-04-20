@@ -44,6 +44,12 @@ export class TelegramConversation {
   })
   usedUnlockPin: boolean;
 
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
+  usedExitCommand: boolean;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
