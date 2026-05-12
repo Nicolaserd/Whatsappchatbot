@@ -5,8 +5,13 @@ export class CreateUserDto {
 
   @IsString()
   @Length(1, 50)
-  @IsOptional()
-  name?: string;
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @Length(1, 100)
+  @IsNotEmpty()
+  lastName: string;
 
   @IsEmail()
   @Length(1, 50)
@@ -50,7 +55,12 @@ export class UpdateUserDto {
     @Length(1, 50)
     @IsOptional()
     name?: string;
-  
+
+    @IsString()
+    @Length(1, 100)
+    @IsOptional()
+    lastName?: string;
+
     @IsEmail()
     @Length(1, 50)
     @IsOptional()

@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { SingUpDto } from './singUp';
+import { SignUpDto } from './signUp';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from '../entities/users.entity';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Role } from '../enum/RoleUser.enum';
 
 @Injectable()
 export class AuthService {
@@ -13,9 +14,9 @@ export class AuthService {
         @InjectRepository(Users) private usersRepository: Repository<Users>,
         private readonly jwtService: JwtService,
       ) {}
-    
 
-    async SingUp(user:SingUpDto){
+
+    async signUp(user:SignUpDto){
 
         if(!user) throw new BadRequestException('Invalid user');
         const email = user.email
@@ -28,15 +29,16 @@ export class AuthService {
             throw new BadRequestException('Passwords do not match');
           }
         
-          const { confirmPassword, ...userData } = user;
-          const { password, ...userwhitoutpassword } = userData;
+          const { confirmPassword, password, ...userData } = user;
           const hashedPassword: string = await bcrypt.hash(password, 10);
           const finalUser: Partial<Users> = {
-            ...userwhitoutpassword,
+            ...userData,
             password: hashedPassword,
+            role: Role.Usuario,
           };
-           await this.usersRepository.save(finalUser);
-      
+           const saved = await this.usersRepository.save(finalUser);
+
+          const { password: _pwd, ...userwhitoutpassword } = saved;
           return userwhitoutpassword;
 
     }

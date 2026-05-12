@@ -23,10 +23,17 @@ import { Proveedores } from './proveedores.entity';
     @Column({
       length: 50,
       type: 'varchar',
-      nullable: true,
+      nullable: false,
     })
     name: string;
-  
+
+    @Column({
+      length: 100,
+      type: 'varchar',
+      nullable: false,
+    })
+    lastName: string;
+
     @Column({
       length: 50,
       unique: true,

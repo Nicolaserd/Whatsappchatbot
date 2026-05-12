@@ -1,86 +1,51 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import userPreload from '../PreloadTemplates/Users';
-import { Messages } from '../entities/message.entity';
 import { Users } from '../entities/users.entity';
 import { Repository } from 'typeorm';
 import { CreateUserDto, UpdateUserDto } from './userDto';
 import * as bcrypt from 'bcrypt';
 
-
-
-
 @Injectable()
 export class UsersService {
     constructor(
         @InjectRepository(Users) private usersRepository: Repository<Users>,
-        @InjectRepository(Messages)
-        private readonly messagesRepository: Repository<Messages>,
-       
       ) {}
-    async onModuleInit() {
-        await this.loadData();
-      }
-    
-      private async loadData() {
-        // Lógica para cargar los datos iniciales
-        const userDb = await this.usersRepository.findBy({email:"john.doe@example.com"})
-        console.log(userDb.length)
-        if(userDb.length>0) 
-          {console.log("ya hay datos")}
-        else{
-          console.log('Preloading data...');
-          const arrayUsers = userPreload.users
-          await Promise.all(arrayUsers.map(async (user) => {
-              const { messages, ...userInitial } = user;
-              const newUser = await this.usersRepository.create(userInitial);
-              newUser.password = await bcrypt.hash(newUser.password, 10);
-              await this.usersRepository.save(newUser);
-              console.log(`usuario ${user.name} agregado`)
-          
-              newUser.messages = await Promise.all(messages.map(async (messageData) => {
-                  const message = await this.messagesRepository.create(messageData);
-                  message.user = newUser; // Relaciona el mensaje con el usuario
-                  await this.messagesRepository.save(message)
-                  console.log(`Mensaje de usuario ${user.name} agregado`)
-                  return message;
-              }));
-                  
-              // Usamos await aquí para esperar a que se guarde el usuario en la base de datos
-             
-            }));
-          // Ejemplo de carga de datos
-          // await this.someRepository.save(initialData);
-        }
-        
-        
-      }
 
-    async createUser (user:CreateUserDto){
+    async createUser (user: CreateUserDto) {
+        const hashedPassword = await bcrypt.hash(user.password, 10);
+        const newUser = await this.usersRepository.save({
+          ...user,
+          password: hashedPassword,
+        });
 
-        const newUser = await this.usersRepository.save(user);
-        
-        const {password,...userNoPassword}=newUser
-
-        return userNoPassword
+        const { password, ...userNoPassword } = newUser;
+        return userNoPassword;
     }
 
-    
+
     async upDateUser (user:UpdateUserDto){
 
         const upDateUser = await this.usersRepository.findOne({where:{id:user.id}})
         if(!upDateUser)  throw new BadRequestException('USUARIO NO ENCONTRADO');
-      
+
         if(user.password){
             const hashedPassword: string = await bcrypt.hash(user.password, 10);
             user.password=hashedPassword
           }
-          
-      
+
+
           await this.usersRepository.update(upDateUser.id, user);
           const updateUser = await this.usersRepository.findOne({where:{id:user.id}})
           const { password,...userWhitoutPassword  } = updateUser;
           return userWhitoutPassword;
-       
+
+    }
+
+    async deleteUser (id: string) {
+        const user = await this.usersRepository.findOne({ where: { id } });
+        if (!user) throw new BadRequestException('USUARIO NO ENCONTRADO');
+
+        await this.usersRepository.remove(user);
+        return { success: 'usuario eliminado', id };
     }
 }

@@ -1,6 +1,25 @@
-import { IsEmail, IsNotEmpty, IsOptional, Matches, MaxLength, MinLength } from "class-validator";
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 
-export class SingUpDto{
+export class SignUpDto{
+    @IsNotEmpty({ message: 'El nombre es obligatorio' })
+    @IsString()
+    @Length(1, 50)
+    name: string;
+
+    @IsNotEmpty({ message: 'El apellido es obligatorio' })
+    @IsString()
+    @Length(1, 100)
+    lastName: string;
+
     @IsNotEmpty({message:'El email es obligatorio'})
     @IsEmail({}, { message: 'El correo electrónico debe ser válido' })
     email:string

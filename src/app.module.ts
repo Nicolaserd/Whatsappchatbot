@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { NplModule } from './npl/npl.module';
 import { AuthModule } from './Auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import typeorm from './config/typeorm';
@@ -10,7 +9,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { config as dotenvConfig } from 'dotenv';
 import { UsersModule } from './Users/users.module';
 import { IaModule } from './IA/ia.module';
-import { MercadoPagoModule } from './mercado-pago/mercado-pago.module';
 import { TelegramModule } from './telegram/telegram.module';
 
 dotenvConfig({ path: '.env' });
@@ -36,7 +34,7 @@ if (process.env.VERCEL && !jwtSecret) {
       //? utiliza el objeto de configuracion no como un objeto sino como una instancia de data source
       useFactory: (config: ConfigService) => config.get('typeorm'),
     }),
-    TelegramModule, NplModule, AuthModule,
+    TelegramModule, AuthModule,
     JwtModule.register({
       global: true,
       //? Pasar un tiempo de vida al jwt
@@ -45,7 +43,6 @@ if (process.env.VERCEL && !jwtSecret) {
     }),
     UsersModule,
     IaModule,
-    MercadoPagoModule,
   ],
   controllers: [AppController],
   providers: [AppService],
