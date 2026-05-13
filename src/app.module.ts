@@ -10,6 +10,7 @@ import { config as dotenvConfig } from 'dotenv';
 import { UsersModule } from './Users/users.module';
 import { IaModule } from './IA/ia.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { PaymentsModule } from './Payments/payments.module';
 
 dotenvConfig({ path: '.env' });
 
@@ -18,7 +19,6 @@ const jwtSecret = process.env.JWT_SECRET;
 if (process.env.VERCEL && !jwtSecret) {
   throw new Error('Missing JWT_SECRET in Vercel Environment Variables.');
 }
-
 
 @Module({
   imports: [
@@ -34,7 +34,8 @@ if (process.env.VERCEL && !jwtSecret) {
       //? utiliza el objeto de configuracion no como un objeto sino como una instancia de data source
       useFactory: (config: ConfigService) => config.get('typeorm'),
     }),
-    TelegramModule, AuthModule,
+    TelegramModule,
+    AuthModule,
     JwtModule.register({
       global: true,
       //? Pasar un tiempo de vida al jwt
@@ -43,6 +44,7 @@ if (process.env.VERCEL && !jwtSecret) {
     }),
     UsersModule,
     IaModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

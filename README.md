@@ -12,7 +12,7 @@ Este README esta escrito como documentacion publica. No debe contener tokens, PI
 - Cifra el contenido de las conversaciones antes de guardarlo.
 - Protege rutas administrativas con JWT y roles.
 - Tiene control de uso configurable para el bot.
-- Incluye modulos iniciales para usuarios, NLP y Mercado Pago.
+- Incluye modulos para usuarios, IA y pagos PSE con Wompi.
 - Esta preparado para correr localmente o desplegarse en Vercel.
 
 ## Estructura
@@ -23,8 +23,7 @@ src/
   Users/             Usuarios y carga inicial de datos
   telegram/          Webhook y envio de mensajes por Telegram
   IA/                Servicio de IA (Gemini con fallback a NVIDIA)
-  npl/               Procesamiento de texto
-  mercado-pago/      Integracion inicial de pagos
+  Payments/          Servicio de pagos PSE con Wompi
   entities/          Entidades de TypeORM
   guards/            Proteccion con JWT y roles
   decorators/        Decoradores compartidos
@@ -56,6 +55,12 @@ NVIDIA_API_KEY=
 NVIDIA_MODEL=
 BOT_UNLOCK_PIN=
 CONVERSATION_ENCRYPTION_KEY=
+WOMPI_ENV=sandbox
+WOMPI_PUBLIC_KEY=
+WOMPI_PRIVATE_KEY=
+WOMPI_INTEGRITY_SECRET=
+WOMPI_EVENTS_SECRET=
+WOMPI_REDIRECT_URL=
 ```
 
 Notas:
@@ -67,6 +72,10 @@ Notas:
 - `TELEGRAM_WEBHOOK_SECRET` es recomendado para validar llamadas entrantes de Telegram.
 - `CONVERSATION_ENCRYPTION_KEY` debe ser una clave larga y privada.
 - `BOT_UNLOCK_PIN` debe tratarse como secreto.
+- `WOMPI_ENV` acepta `sandbox` o `production`.
+- `WOMPI_PUBLIC_KEY`, `WOMPI_PRIVATE_KEY`, `WOMPI_INTEGRITY_SECRET` y
+  `WOMPI_EVENTS_SECRET` salen del dashboard de Wompi. No son intercambiables.
+- `WOMPI_REDIRECT_URL` es opcional e informativa; el estado real se cierra por webhook.
 
 ## Seguridad
 
@@ -140,6 +149,31 @@ dropSchema: false,
 ```
 
 No uses `dropSchema: true` en una base de datos con datos importantes.
+
+## Pagos PSE
+
+La integracion PSE usa Wompi por API y guarda cada intento en
+`PAYMENT_TRANSACTIONS`.
+
+Rutas principales:
+
+- `GET /payments/wompi/acceptance-tokens`
+- `GET /payments/wompi/pse/financial-institutions`
+- `POST /payments/pse`
+- `GET /payments/transactions/:id`
+- `GET /payments/transactions/reference/:reference`
+- `GET /payments/wompi/transactions/:providerTransactionId/status`
+- `POST /payments/wompi/webhook`
+
+Notas de seguridad:
+
+- El cliente debe aceptar explicitamente los dos contratos de Wompi antes de
+  crear el pago (`acceptedWompiPolicy` y `acceptedPersonalDataAuth`).
+- La firma de integridad de la transaccion se genera en backend con
+  `WOMPI_INTEGRITY_SECRET`.
+- El webhook de Wompi se valida con `X-Event-Checksum` y `WOMPI_EVENTS_SECRET`.
+- El redirect solo informa al usuario; no se debe usar como prueba de pago.
+- En produccion usa HTTPS para `WOMPI_REDIRECT_URL` y para el webhook.
 
 ## Correr localmente
 
